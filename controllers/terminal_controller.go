@@ -12,7 +12,7 @@ func CreateTerminal(c *fiber.Ctx) error {
         return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
     }
 
-    // simpan ID terminal yang baru dibuat
+   
     var newID int64
     err := database.DB.QueryRow(
         "INSERT INTO terminals (name, location, code) VALUES ($1, $2, $3) RETURNING id",

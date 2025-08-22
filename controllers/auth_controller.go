@@ -23,10 +23,10 @@ func Login(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
 	}
 
-	// 🟢 Log untuk cek input dari request
+	
 	fmt.Printf("DEBUG: Username masuk = %s | Password masuk = %s\n", input.Username, input.Password)
 
-	// cari user berdasarkan username (case-insensitive)
+	
 	var user models.User
 	err := database.DB.Get(&user,
 		"SELECT * FROM users WHERE username ILIKE $1 LIMIT 1",
@@ -34,18 +34,18 @@ func Login(c *fiber.Ctx) error {
 
 	
 if err != nil {
-    // log error detail
+    
     fmt.Println("DEBUG: error SQL =", err)
     return c.Status(401).JSON(fiber.Map{"error": "User not found"})
 }
 
-	// bandingkan password (sementara plain text)
+	
 	if user.Password != input.Password {
 		fmt.Println("DEBUG: Password tidak cocok")
 		return c.Status(401).JSON(fiber.Map{"error": "Invalid password"})
 	}
 
-	// buat JWT token
+	
 	claims := jwt.MapClaims{
 		"id":  user.ID,
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
