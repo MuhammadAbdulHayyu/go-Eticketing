@@ -1,0 +1,87 @@
+-- USERS
+CREATE TABLE users(
+  id         bigserial primary key,
+  username   varchar(50) unique not null,
+  password   varchar(100) not null,   
+  role       varchar(20) not null default 'admin',
+  is_active  boolean not null default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+
+-- TERMINALS
+create table terminals(
+  id            bigserial primary key,
+  code          varchar(20) unique not null, -- ex: T1, T2
+  name          varchar(100) not null,
+  location      text,
+  is_active     boolean not null default true,
+  created_at    timestamptz default now(),
+  updated_at    timestamptz default now()
+);
+
+-- GATES 
+create table gates(
+  id            bigserial primary key,
+  terminal_id   bigint not null references terminals(id) on delete cascade,
+  code          varchar(20) not null, 
+  nama_gate     varchar(64),          
+  is_active     boolean not null default true,
+  created_at    timestamptz default now()
+);
+create unique index ux_gates_terminal_code on gates(terminal_id, code);
+
+-- MATRICS TARIF 
+create table tarif_destinasi(
+  id                  bigserial primary key,
+  origin_terminal_id  bigint not null references terminals(id),
+  dest_terminal_id    bigint not null references terminals(id),
+  tarif               integer not null ,
+  created_at      	  timestamptz default now(),
+  unique(origin_terminal_id, dest_terminal_id)
+);
+
+-- KARTU
+create table cards(
+  id            bigserial primary key,
+  card_uid      varchar(32) unique not null, -- UID NFC
+  last_seen_at  timestamptz,
+  created_at    timestamptz default now()
+);
+
+-- TRIPS 
+create table checkpoint(
+  id            bigserial primary key,
+  card_id       bigint not null references cards(id),
+  checkin_gate_id  bigint references gates(id),
+  checkout_gate_id bigint references gates(id),
+  origin_terminal_id bigint references terminals(id),
+  dest_terminal_id   bigint references terminals(id),
+  checkin_time   timestamptz,
+  checkout_time  timestamptz,
+  status         varchar(20) not null default 'in_progress', -- in_progress, completed, cancelled
+  created_at     timestamptz default now()
+);
+
+-- TRANSACTIONS 
+create table transactions(
+  id            bigserial primary key,
+  checkpoint_id bigint references checkpoint(id),
+  card_id       bigint references cards(id),
+  gate_id       bigint references gates(id),
+  amount        integer not null,          
+  ts_gate       timestamptz,               -- waktu di gate
+  ts_server     timestamptz default now(), -- waktu diterima server
+  unique(card_id, ts_gate )           -- idempotensi sederhana
+);
+
+-- ANTRIAN SINKRONISASI 
+create table sync_queues(
+  id            bigserial primary key,
+  gate_id       bigint references gates(id),
+  payload       jsonb not null,   -- transaksi offline
+  status        varchar(20) not null default 'queued', -- queued, sent, acked, error
+  created_at    timestamptz default now(),
+  updated_at    timestamptz default now()
+);
